@@ -1,0 +1,7 @@
+__pycache__
+.vscode
+geckodriver.log
+exceptions.txt
+
+LC_coord_Cluj.csv
+LCCluj.csv
