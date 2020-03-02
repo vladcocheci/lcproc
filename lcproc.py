@@ -14,7 +14,6 @@ output_file_name ="LC" + jud + ".csv"
 
 ### main function
 def main():
-    
     n = get_pages_no(base_link + "nr=1&jud=" + jud)
     pages_link_list = list_generator(base_link, n)
     link_list = LC_scraper(pages_link_list)
