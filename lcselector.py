@@ -4,7 +4,9 @@ import re
 import pandas as pd
 import csv
 
-jud = "Cluj"
+# jud = "Cluj"
+# jud = "Bucureszzti"
+jud = "Ilfov"
 input_file_name ="LC" + jud + ".csv"
 output_file_name ="LC_coord_" + jud + ".csv"
 

@@ -6,20 +6,34 @@ import csv
 import time
 from yelp_uri.encoding import recode_uri
 from random import randrange
+import os.path
+from os import path
 
 exceptions_file_name = "exceptions.txt"     # exceptions file
 base_link = "http://www.cimec.ro/Monumente/LacaseCult/RO/Documente/ASP/seljud.asp?"
-jud = "Cluj"
+# jud = "Cluj"
+# jud = "Bucureszzti"
+jud = "Ilfov"
 output_file_name ="LC" + jud + ".csv"
 
 ### main function
 def main():
     n = get_pages_no(base_link + "nr=1&jud=" + jud)
-    pages_link_list = list_generator(base_link, n)
-    link_list = LC_scraper(pages_link_list)
-    # print(link_list)
+    while n == None:
+        time.sleep(1 + randrange(3))
+        n = get_pages_no(base_link + "nr=1&jud=" + jud)
+    print(n)
 
-    scraper(link_list,output_file_name)
+    link_list = list_generator(base_link, n)   
+
+    to_scan_list = []   # the list of links to scrape
+    while link_list:
+        link_list, to_scan = LC_scraper(link_list)    # link_list contains now links to pages that had url errors
+        to_scan_list.extend(to_scan)
+    # print(to_scan_list)
+
+    while to_scan_list:
+        to_scan_list = scraper(to_scan_list, output_file_name)
 
     
 # function that returns the number of LC pages
@@ -44,7 +58,7 @@ def get_pages_no(base_link):
 
     except Exception as e:
         exceptions_file = open(exceptions_file_name,'a')
-        exceptions_file.write(str(e) + ": " + url + "\n")
+        exceptions_file.write(str(e) + ": " + base_link + "\n")
         exceptions_file.close()
 
 
@@ -61,6 +75,7 @@ def list_generator(base_link, n):
 # LC scraper function -returns a list of links to all records
 def LC_scraper(page_link_list):
     cod_list = []
+    error_links = []
     for url in page_link_list:
         try:
             req = urllib.request.Request(
@@ -83,16 +98,18 @@ def LC_scraper(page_link_list):
         
         except Exception as e:
             exceptions_file = open(exceptions_file_name,'a')
-            exceptions_file.write(str(e) + ": " + url + "\n")
+            exceptions_file.write("!!!" + str(e) + ": " + url + "\n")
             exceptions_file.close()
+            error_links.append(url)
 
-        time.sleep(1)
-    return cod_list
+        time.sleep(randrange(3))
+    return error_links, cod_list
 
 
 # content scraper function -scraps relevant content from each page and saves it to .csv files
 def scraper(link_list, output_file_name):
     rec = []    # stores information from all tables
+    error_links = []    # stores links that raised errors when trying to open
     count = 0
 
     for url in link_list:
@@ -203,6 +220,7 @@ def scraper(link_list, output_file_name):
             exceptions_file = open(exceptions_file_name,'a')
             exceptions_file.write(str(e) + ": " + url + "\n")
             exceptions_file.close()
+            error_links.append(url)
 
         time.sleep(randrange(3))
         if count % 10 == 0:
@@ -210,7 +228,11 @@ def scraper(link_list, output_file_name):
             time.sleep(5)
 
     df = pd.DataFrame(rec, columns = ['denumirea', 'parohia', 'datare', 'tip', 'link_harta', 'judet', 'localitate', 'comuna', 'adresa', 'protopopiat', 'episcopie_arhiepiscopie', 'mitropolie', 'cod_LMI', 'descriere'])
-    df.to_csv(output_file_name, index = False)
+    df.to_csv(output_file_name, mode = 'a', header = not(path.exists(output_file_name)), index = False) # if the file doesn't exist, create it and write the dataframe with a header else it append the dataframe without header
+
+    exceptions_file = open(exceptions_file_name,'a')
+    exceptions_file.write("________________________________________________________________" + "\n")
+    return error_links
 
 
 
